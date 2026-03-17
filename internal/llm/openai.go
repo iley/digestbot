@@ -3,6 +3,8 @@ package llm
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
@@ -14,7 +16,7 @@ const defaultModel = "gpt-5-mini"
 type OpenAI struct {
 	APIKey  string
 	Model   string
-	BaseURL string // override for testing; leave empty for default
+	BaseURL string // OpenAI-compatible endpoint; leave empty for OpenAI
 }
 
 func (o *OpenAI) Complete(ctx context.Context, prompt string) (string, error) {
@@ -43,5 +45,28 @@ func (o *OpenAI) Complete(ctx context.Context, prompt string) (string, error) {
 		return "", fmt.Errorf("openai: no choices in response")
 	}
 
-	return completion.Choices[0].Message.Content, nil
+	return cleanResponse(completion.Choices[0].Message.Content), nil
+}
+
+var thinkBlockRe = regexp.MustCompile(`(?s)<think>.*?</think>`)
+
+// cleanResponse strips artifacts that some models wrap around their output so
+// callers get the bare content. Reasoning models (e.g. DeepSeek-R1, Qwen3 in
+// thinking mode) prepend a <think>...</think> block, and many models fence
+// structured output in a ```json ... ``` block; both break strict JSON parsing.
+func cleanResponse(s string) string {
+	s = thinkBlockRe.ReplaceAllString(s, "")
+	s = strings.TrimSpace(s)
+
+	// Strip a surrounding markdown code fence (```json ... ``` or ``` ... ```).
+	if strings.HasPrefix(s, "```") {
+		if i := strings.IndexByte(s, '\n'); i >= 0 {
+			s = s[i+1:]
+		}
+		if i := strings.LastIndex(s, "```"); i >= 0 {
+			s = s[:i]
+		}
+	}
+
+	return strings.TrimSpace(s)
 }

@@ -27,8 +27,11 @@ All configuration is done via environment variables or CLI flags. Flags take pre
 | Longitude | `DIGESTBOT_LONGITUDE` | `--longitude` | yes | — |
 | OpenAI API key | `DIGESTBOT_OPENAI_API_KEY` | `--openai-api-key` | yes | — |
 | Timezone | `DIGESTBOT_TIMEZONE` | `--timezone` | no | `Europe/Dublin` |
+| Segments | `DIGESTBOT_SEGMENTS` | `--segments` | no | `weather,irishtimes,meduza` |
 
 Latitude and longitude are used to fetch weather from [Open-Meteo](https://open-meteo.com/). Timezone must be a valid [tz database name](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) (e.g. `Europe/Dublin`, `America/New_York`).
+
+Segments controls which digest sections are included and in what order. Available segments: `weather`, `irishtimes`, `meduza`.
 
 ## Running
 

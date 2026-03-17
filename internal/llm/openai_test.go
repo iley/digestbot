@@ -86,3 +86,26 @@ func TestOpenAICompleteNoChoices(t *testing.T) {
 		t.Fatal("expected error for empty choices, got nil")
 	}
 }
+
+func TestCleanResponse(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"plain", `[{"index":1}]`, `[{"index":1}]`},
+		{"think_block", "<think>let me reason</think>\n[{\"index\":1}]", `[{"index":1}]`},
+		{"multiline_think", "<think>\nfirst\nsecond\n</think>[1,2]", `[1,2]`},
+		{"json_fence", "```json\n[{\"index\":1}]\n```", `[{"index":1}]`},
+		{"plain_fence", "```\n[1]\n```", `[1]`},
+		{"think_and_fence", "<think>reason</think>\n```json\n[1]\n```", `[1]`},
+		{"surrounding_whitespace", "  [1]  ", `[1]`},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := cleanResponse(c.in); got != c.want {
+				t.Errorf("cleanResponse(%q) = %q, want %q", c.in, got, c.want)
+			}
+		})
+	}
+}
