@@ -1,0 +1,7 @@
+.git
+digestbot
+*.exe
+.idea/
+.vscode/
+*.swp
+*.swo
