@@ -27,7 +27,7 @@ func main() {
 		Timezone:  cfg.Timezone,
 	}
 
-	irishtimesFetcher := &news.RSSFetcher{FeedURL: "https://www.irishtimes.com/rss/news"}
+	irishtimesFetcher := &news.RSSFetcher{FeedURL: "https://www.irishtimes.com/arc/outboundfeeds/rss/"}
 
 	segments := []segment.Segment{
 		&segment.Weather{Provider: weatherProvider},

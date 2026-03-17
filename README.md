@@ -5,13 +5,13 @@ Personal Telegram bot that sends a daily digest combining weather and news.
 ## Digest contents
 
 - **Weather** — today's forecast (temperature range, precipitation, conditions) from [Open-Meteo](https://open-meteo.com/)
-- **Irish Times** — top headlines from the [Irish Times RSS feed](https://www.irishtimes.com/rss/news)
+- **Irish Times** — top headlines from the [Irish Times RSS feed](https://www.irishtimes.com/arc/outboundfeeds/rss/)
 
 ## Prerequisites
 
 - Go 1.26+
 - A Telegram bot token (from [@BotFather](https://t.me/BotFather))
-- The chat ID where the bot should send messages
+- The chat ID where the bot should send messages (send a message to your bot, then visit `https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates` — the chat ID is in `result[].message.chat.id`)
 
 ## Configuration
 
