@@ -32,10 +32,24 @@ func main() {
 	irishtimesFetcher := &news.RSSFetcher{FeedURL: "https://www.irishtimes.com/arc/outboundfeeds/rss/"}
 	meduzaFetcher := &news.RSSFetcher{FeedURL: "https://meduza.io/rss/news"}
 
-	segments := []segment.Segment{
-		&segment.Weather{Provider: weatherProvider},
-		&segment.News{Title: "Irish Times", Fetcher: irishtimesFetcher, LLM: llmClient},
-		&segment.News{Title: "Meduza", Fetcher: meduzaFetcher, LLM: llmClient, Language: "ru"},
+	builders := map[string]func() segment.Segment{
+		"weather": func() segment.Segment { return &segment.Weather{Provider: weatherProvider} },
+		"irishtimes": func() segment.Segment {
+			return &segment.News{Title: "Irish Times", Fetcher: irishtimesFetcher, LLM: llmClient}
+		},
+		"meduza": func() segment.Segment {
+			return &segment.News{Title: "Meduza", Fetcher: meduzaFetcher, LLM: llmClient, Language: "ru"}
+		},
+	}
+
+	segments := make([]segment.Segment, 0, len(cfg.Segments))
+	for _, name := range cfg.Segments {
+		build, ok := builders[name]
+		if !ok {
+			fmt.Fprintf(os.Stderr, "error: unknown segment %q\n", name)
+			os.Exit(1)
+		}
+		segments = append(segments, build())
 	}
 
 	ctx := context.Background()
