@@ -14,9 +14,10 @@ import (
 const maxNewsArticles = 5
 
 type News struct {
-	Title   string
-	Fetcher news.FeedFetcher
-	LLM     llm.LLM // nil = raw headlines (no summarization)
+	Title    string
+	Fetcher  news.FeedFetcher
+	LLM      llm.LLM // nil = raw headlines (no summarization)
+	Language string  // "ru" for Russian prompts; default is English
 }
 
 func (n *News) Produce(ctx context.Context) (string, error) {
@@ -54,7 +55,7 @@ type llmPick struct {
 }
 
 func (n *News) produceWithLLM(ctx context.Context, articles []news.Article) (string, error) {
-	prompt := buildPrompt(n.Title, articles)
+	prompt := buildPrompt(n.Title, articles, n.Language)
 
 	response, err := n.LLM.Complete(ctx, prompt)
 	if err != nil {
@@ -79,19 +80,31 @@ func (n *News) produceWithLLM(ctx context.Context, articles []news.Article) (str
 	return b.String(), nil
 }
 
-func buildPrompt(source string, articles []news.Article) string {
+func buildPrompt(source string, articles []news.Article, language string) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "Here are today's headlines from %s:\n", source)
+
+	// Build the numbered article list (shared by both languages).
+	var list strings.Builder
 	for i, a := range articles {
-		fmt.Fprintf(&b, "%d. %s", i+1, a.Title)
+		fmt.Fprintf(&list, "%d. %s", i+1, a.Title)
 		if a.Summary != "" {
-			fmt.Fprintf(&b, " — %s", a.Summary)
+			fmt.Fprintf(&list, " — %s", a.Summary)
 		}
-		b.WriteString("\n")
+		list.WriteString("\n")
 	}
-	b.WriteString("\nPick the 3 most important news stories. Return a JSON array:\n")
-	b.WriteString(`[{"index": <1-based>, "summary": "<1-2 sentence summary>"}]`)
-	b.WriteString("\nReturn ONLY the JSON array, no other text.")
+
+	if language == "ru" {
+		fmt.Fprintf(&b, "Вот сегодняшние заголовки из %s:\n%s", source, list.String())
+		b.WriteString("\nВыбери 3 самые важные новости. Верни JSON-массив:\n")
+		b.WriteString(`[{"index": <номер от 1>, "summary": "<краткое описание в 1-2 предложения>"}]`)
+		b.WriteString("\nВерни ТОЛЬКО JSON-массив, без другого текста.")
+	} else {
+		fmt.Fprintf(&b, "Here are today's headlines from %s:\n%s", source, list.String())
+		b.WriteString("\nPick the 3 most important news stories. Return a JSON array:\n")
+		b.WriteString(`[{"index": <1-based>, "summary": "<1-2 sentence summary>"}]`)
+		b.WriteString("\nReturn ONLY the JSON array, no other text.")
+	}
+
 	return b.String()
 }
 

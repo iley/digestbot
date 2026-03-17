@@ -82,6 +82,42 @@ func TestNewsWithLLM(t *testing.T) {
 	}
 }
 
+func TestNewsWithLLMRussian(t *testing.T) {
+	articles := []news.Article{
+		{Title: "Статья один", Summary: "Описание один", Link: "https://example.com/1"},
+		{Title: "Статья два", Summary: "Описание два", Link: "https://example.com/2"},
+		{Title: "Статья три", Summary: "Описание три", Link: "https://example.com/3"},
+	}
+
+	llm := &mockLLM{
+		response: `[{"index": 1, "summary": "Первая важная"}, {"index": 2, "summary": "Вторая важная"}]`,
+	}
+
+	n := &News{
+		Title:    "Meduza",
+		Fetcher:  &mockFetcher{articles: articles},
+		LLM:      llm,
+		Language: "ru",
+	}
+
+	result, err := n.Produce(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(result, "<b>Meduza</b>") {
+		t.Errorf("missing title in result: %s", result)
+	}
+	if !strings.Contains(result, "Первая важная") {
+		t.Errorf("missing first summary in result: %s", result)
+	}
+
+	// Prompt should be in Russian
+	if !strings.Contains(llm.received, "Выбери 3 самые важные") {
+		t.Errorf("prompt should be in Russian: %s", llm.received)
+	}
+}
+
 func TestNewsWithoutLLM(t *testing.T) {
 	articles := []news.Article{
 		{Title: "Headline A", Link: "https://example.com/a"},

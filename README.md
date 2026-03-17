@@ -6,6 +6,7 @@ Personal Telegram bot that sends a daily digest combining weather and news.
 
 - **Weather** — today's forecast (temperature range, precipitation, conditions) from [Open-Meteo](https://open-meteo.com/)
 - **Irish Times** — top 3 stories from the [Irish Times RSS feed](https://www.irishtimes.com/arc/outboundfeeds/rss/), selected and summarized by an LLM
+- **Meduza** — top 3 stories from the [Meduza RSS feed](https://meduza.io/rss/news), selected and summarized in Russian by an LLM
 
 ## Prerequisites
 

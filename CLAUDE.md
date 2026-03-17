@@ -4,7 +4,7 @@ Personal Telegram bot that sends a daily digest combining weather and news. Buil
 
 ## Status
 
-Work in progress. **Milestone 5 (LLM summarization) is complete.** The bot fetches Irish Times articles, uses an LLM to pick the 3 most important and summarize them, then sends the digest via Telegram. See the Obsidian note `Digestbot.md` for the full roadmap (M6).
+Work in progress. **Milestone 6 (Meduza integration) is complete.** The bot fetches Irish Times and Meduza news, uses an LLM to pick the 3 most important from each source and summarize them (Meduza in Russian), then sends the digest via Telegram. See the Obsidian note `Digestbot.md` for the full roadmap.
 
 ## Architecture
 

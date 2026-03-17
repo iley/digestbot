@@ -30,10 +30,12 @@ func main() {
 
 	llmClient := &llm.OpenAI{APIKey: cfg.OpenAIAPIKey}
 	irishtimesFetcher := &news.RSSFetcher{FeedURL: "https://www.irishtimes.com/arc/outboundfeeds/rss/"}
+	meduzaFetcher := &news.RSSFetcher{FeedURL: "https://meduza.io/rss/news"}
 
 	segments := []segment.Segment{
 		&segment.Weather{Provider: weatherProvider},
 		&segment.News{Title: "Irish Times", Fetcher: irishtimesFetcher, LLM: llmClient},
+		&segment.News{Title: "Meduza", Fetcher: meduzaFetcher, LLM: llmClient, Language: "ru"},
 	}
 
 	ctx := context.Background()
