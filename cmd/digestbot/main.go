@@ -9,6 +9,7 @@ import (
 	"github.com/go-telegram/bot/models"
 	"github.com/iley/digestbot/internal/config"
 	"github.com/iley/digestbot/internal/digest"
+	"github.com/iley/digestbot/internal/news"
 	"github.com/iley/digestbot/internal/segment"
 	"github.com/iley/digestbot/internal/weather"
 )
@@ -26,9 +27,11 @@ func main() {
 		Timezone:  cfg.Timezone,
 	}
 
+	irishtimesFetcher := &news.RSSFetcher{FeedURL: "https://www.irishtimes.com/rss/news"}
+
 	segments := []segment.Segment{
 		&segment.Weather{Provider: weatherProvider},
-		&segment.Placeholder{Title: "Irish Times", Body: "Top story: placeholder headline."},
+		&segment.News{Title: "Irish Times", Fetcher: irishtimesFetcher},
 		&segment.Placeholder{Title: "Meduza", Body: "Главное: заглушка заголовка."},
 	}
 

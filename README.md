@@ -2,6 +2,11 @@
 
 Personal Telegram bot that sends a daily digest combining weather and news.
 
+## Digest contents
+
+- **Weather** — today's forecast (temperature range, precipitation, conditions) from [Open-Meteo](https://open-meteo.com/)
+- **Irish Times** — top headlines from the [Irish Times RSS feed](https://www.irishtimes.com/rss/news)
+
 ## Prerequisites
 
 - Go 1.26+

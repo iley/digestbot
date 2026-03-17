@@ -4,7 +4,7 @@ Personal Telegram bot that sends a daily digest combining weather and news. Buil
 
 ## Status
 
-Work in progress. **Milestone 2 (Segment architecture) is complete.** The bot composes a digest from placeholder segments and sends it via Telegram. See the Obsidian note `Digestbot.md` for the full roadmap (M3–M6).
+Work in progress. **Milestone 4 (Irish Times RSS) is complete.** The bot composes a digest from real weather and news segments and sends it via Telegram. See the Obsidian note `Digestbot.md` for the full roadmap (M5–M6).
 
 ## Architecture
 
@@ -17,8 +17,10 @@ Work in progress. **Milestone 2 (Segment architecture) is complete.** The bot co
 ```
 cmd/digestbot/       — entry point
 internal/config/     — CLI flags + env var parsing
-internal/segment/    — Segment interface + placeholder implementation
+internal/segment/    — Segment interface + implementations
 internal/digest/     — orchestrator (Compose)
+internal/news/       — news feed fetching (Article, FeedFetcher, RSSFetcher)
+internal/weather/    — weather data fetching
 ```
 
 ## Build & Run
