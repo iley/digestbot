@@ -10,6 +10,7 @@ import (
 	"github.com/iley/digestbot/internal/config"
 	"github.com/iley/digestbot/internal/digest"
 	"github.com/iley/digestbot/internal/segment"
+	"github.com/iley/digestbot/internal/weather"
 )
 
 func main() {
@@ -19,8 +20,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	weatherProvider := &weather.OpenMeteo{
+		Latitude:  cfg.Latitude,
+		Longitude: cfg.Longitude,
+		Timezone:  cfg.Timezone,
+	}
+
 	segments := []segment.Segment{
-		&segment.Placeholder{Title: "Weather", Body: "Dublin: 12°C, partly cloudy."},
+		&segment.Weather{Provider: weatherProvider},
 		&segment.Placeholder{Title: "Irish Times", Body: "Top story: placeholder headline."},
 		&segment.Placeholder{Title: "Meduza", Body: "Главное: заглушка заголовка."},
 	}
