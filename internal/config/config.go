@@ -23,9 +23,12 @@ func Parse() (*Config, error) {
 		chatIDDefault = v
 	}
 
-	botToken := flag.String("bot-token", botTokenDefault, "Telegram bot token (env: DIGESTBOT_BOT_TOKEN)")
-	chatID := flag.Int64("chat-id", chatIDDefault, "Telegram chat ID (env: DIGESTBOT_CHAT_ID)")
-	flag.Parse()
+	fs := flag.NewFlagSet("digestbot", flag.ContinueOnError)
+	botToken := fs.String("bot-token", botTokenDefault, "Telegram bot token (env: DIGESTBOT_BOT_TOKEN)")
+	chatID := fs.Int64("chat-id", chatIDDefault, "Telegram chat ID (env: DIGESTBOT_CHAT_ID)")
+	if err := fs.Parse(os.Args[1:]); err != nil {
+		return nil, err
+	}
 
 	if *botToken == "" {
 		return nil, fmt.Errorf("bot token is required (--bot-token or DIGESTBOT_BOT_TOKEN)")

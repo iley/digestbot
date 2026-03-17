@@ -24,8 +24,8 @@ func main() {
 	}
 
 	_, err = b.SendMessage(context.Background(), &bot.SendMessageParams{
-		ChatID: cfg.ChatID,
-		Text:   "Hello from Digestbot!",
+		ChatID:    cfg.ChatID,
+		Text:      "Hello from Digestbot!",
 		ParseMode: models.ParseModeHTML,
 	})
 	if err != nil {
