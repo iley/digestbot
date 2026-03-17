@@ -4,13 +4,13 @@ Personal Telegram bot that sends a daily digest combining weather and news. Buil
 
 ## Status
 
-Work in progress. **Milestone 4 (Irish Times RSS) is complete.** The bot composes a digest from real weather and news segments and sends it via Telegram. See the Obsidian note `Digestbot.md` for the full roadmap (M5–M6).
+Work in progress. **Milestone 5 (LLM summarization) is complete.** The bot fetches Irish Times articles, uses an LLM to pick the 3 most important and summarize them, then sends the digest via Telegram. See the Obsidian note `Digestbot.md` for the full roadmap (M6).
 
 ## Architecture
 
 - **Segment-based**: each content source implements the `Segment` interface (`internal/segment/`); the orchestrator (`internal/digest/`) collects and composes output. Segments are responsible for returning valid Telegram HTML (use `segment.EscapeHTML` for dynamic text).
 - **All external deps behind Go interfaces**: `WeatherProvider`, `ContentExtractor`, `LLM`, etc.
-- **Config**: CLI flags + environment variables only, no config files. Secrets via env vars (`DIGESTBOT_BOT_TOKEN`, `DIGESTBOT_CHAT_ID`).
+- **Config**: CLI flags + environment variables only, no config files. Secrets via env vars (`DIGESTBOT_BOT_TOKEN`, `DIGESTBOT_CHAT_ID`, `DIGESTBOT_OPENAI_API_KEY`).
 
 ## Project Layout
 
@@ -19,6 +19,7 @@ cmd/digestbot/       — entry point
 internal/config/     — CLI flags + env var parsing
 internal/segment/    — Segment interface + implementations
 internal/digest/     — orchestrator (Compose)
+internal/llm/        — LLM interface + OpenAI implementation
 internal/news/       — news feed fetching (Article, FeedFetcher, RSSFetcher)
 internal/weather/    — weather data fetching
 ```

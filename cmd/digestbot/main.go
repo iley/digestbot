@@ -9,6 +9,7 @@ import (
 	"github.com/go-telegram/bot/models"
 	"github.com/iley/digestbot/internal/config"
 	"github.com/iley/digestbot/internal/digest"
+	"github.com/iley/digestbot/internal/llm"
 	"github.com/iley/digestbot/internal/news"
 	"github.com/iley/digestbot/internal/segment"
 	"github.com/iley/digestbot/internal/weather"
@@ -27,12 +28,12 @@ func main() {
 		Timezone:  cfg.Timezone,
 	}
 
+	llmClient := &llm.OpenAI{APIKey: cfg.OpenAIAPIKey}
 	irishtimesFetcher := &news.RSSFetcher{FeedURL: "https://www.irishtimes.com/arc/outboundfeeds/rss/"}
 
 	segments := []segment.Segment{
 		&segment.Weather{Provider: weatherProvider},
-		&segment.News{Title: "Irish Times", Fetcher: irishtimesFetcher},
-		&segment.Placeholder{Title: "Meduza", Body: "Главное: заглушка заголовка."},
+		&segment.News{Title: "Irish Times", Fetcher: irishtimesFetcher, LLM: llmClient},
 	}
 
 	ctx := context.Background()

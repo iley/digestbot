@@ -8,11 +8,12 @@ import (
 )
 
 type Config struct {
-	BotToken  string
-	ChatID    int64
-	Latitude  float64
-	Longitude float64
-	Timezone  string
+	BotToken     string
+	ChatID       int64
+	Latitude     float64
+	Longitude    float64
+	Timezone     string
+	OpenAIAPIKey string
 }
 
 func Parse() (*Config, error) {
@@ -44,6 +45,7 @@ func Parse() (*Config, error) {
 		lonDefault = v
 		lonSet = true
 	}
+	openAIKeyDefault := os.Getenv("DIGESTBOT_OPENAI_API_KEY")
 	tzDefault := os.Getenv("DIGESTBOT_TIMEZONE")
 	if tzDefault == "" {
 		tzDefault = "Europe/Dublin"
@@ -55,10 +57,14 @@ func Parse() (*Config, error) {
 	latitude := fs.Float64("latitude", latDefault, "Latitude for weather (env: DIGESTBOT_LATITUDE)")
 	longitude := fs.Float64("longitude", lonDefault, "Longitude for weather (env: DIGESTBOT_LONGITUDE)")
 	timezone := fs.String("timezone", tzDefault, "Timezone for weather (env: DIGESTBOT_TIMEZONE)")
+	openAIKey := fs.String("openai-api-key", openAIKeyDefault, "OpenAI API key (env: DIGESTBOT_OPENAI_API_KEY)")
 	if err := fs.Parse(os.Args[1:]); err != nil {
 		return nil, err
 	}
 
+	if *openAIKey == "" {
+		return nil, fmt.Errorf("OpenAI API key is required (--openai-api-key or DIGESTBOT_OPENAI_API_KEY)")
+	}
 	if *botToken == "" {
 		return nil, fmt.Errorf("bot token is required (--bot-token or DIGESTBOT_BOT_TOKEN)")
 	}
@@ -84,10 +90,11 @@ func Parse() (*Config, error) {
 	}
 
 	return &Config{
-		BotToken:  *botToken,
-		ChatID:    *chatID,
-		Latitude:  *latitude,
-		Longitude: *longitude,
-		Timezone:  *timezone,
+		BotToken:     *botToken,
+		ChatID:       *chatID,
+		Latitude:     *latitude,
+		Longitude:    *longitude,
+		Timezone:     *timezone,
+		OpenAIAPIKey: *openAIKey,
 	}, nil
 }
