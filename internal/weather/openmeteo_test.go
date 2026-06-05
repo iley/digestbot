@@ -4,7 +4,9 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 const cannedResponse = `{
@@ -76,7 +78,9 @@ func TestOpenMeteoEmptyDaily(t *testing.T) {
 }
 
 func TestOpenMeteoServerError(t *testing.T) {
+	var calls atomic.Int32
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
 	defer srv.Close()
@@ -86,10 +90,73 @@ func TestOpenMeteoServerError(t *testing.T) {
 		Longitude: -6.26,
 		Timezone:  "Europe/Dublin",
 		BaseURL:   srv.URL,
+		Backoff:   time.Millisecond,
 	}
 
 	_, err := client.Today(context.Background())
 	if err == nil {
 		t.Fatal("expected error for server error response")
+	}
+	if got := calls.Load(); got != maxAttempts {
+		t.Errorf("server called %d times, want %d (5xx should be retried)", got, maxAttempts)
+	}
+}
+
+// A 4xx response is a client error and must not be retried.
+func TestOpenMeteoClientErrorNoRetry(t *testing.T) {
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		w.WriteHeader(http.StatusBadRequest)
+	}))
+	defer srv.Close()
+
+	client := &OpenMeteo{
+		Latitude:  53.35,
+		Longitude: -6.26,
+		Timezone:  "Europe/Dublin",
+		BaseURL:   srv.URL,
+		Backoff:   time.Millisecond,
+	}
+
+	_, err := client.Today(context.Background())
+	if err == nil {
+		t.Fatal("expected error for client error response")
+	}
+	if got := calls.Load(); got != 1 {
+		t.Errorf("server called %d times, want 1 (4xx must not be retried)", got)
+	}
+}
+
+// Transient 5xx responses should be retried until one succeeds.
+func TestOpenMeteoRetryRecovers(t *testing.T) {
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if calls.Add(1) < maxAttempts {
+			w.WriteHeader(http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(cannedResponse))
+	}))
+	defer srv.Close()
+
+	client := &OpenMeteo{
+		Latitude:  53.35,
+		Longitude: -6.26,
+		Timezone:  "Europe/Dublin",
+		BaseURL:   srv.URL,
+		Backoff:   time.Millisecond,
+	}
+
+	forecast, err := client.Today(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error after retries: %v", err)
+	}
+	if forecast.TemperatureMax != 12.3 {
+		t.Errorf("TemperatureMax = %v, want 12.3", forecast.TemperatureMax)
+	}
+	if got := calls.Load(); got != maxAttempts {
+		t.Errorf("server called %d times, want %d", got, maxAttempts)
 	}
 }

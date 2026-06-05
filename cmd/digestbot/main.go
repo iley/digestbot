@@ -36,32 +36,27 @@ func main() {
 	irishtimesFetcher := &news.RSSFetcher{FeedURL: "https://www.irishtimes.com/arc/outboundfeeds/rss/"}
 	meduzaFetcher := &news.RSSFetcher{FeedURL: "https://meduza.io/rss/news"}
 
-	builders := map[string]func() segment.Segment{
-		"weather": func() segment.Segment { return &segment.Weather{Provider: weatherProvider} },
-		"irishtimes": func() segment.Segment {
-			return &segment.News{Title: "Irish Times", Fetcher: irishtimesFetcher, LLM: llmClient}
-		},
-		"meduza": func() segment.Segment {
-			return &segment.News{Title: "Meduza", Fetcher: meduzaFetcher, LLM: llmClient, Language: "ru"}
-		},
+	irishtimes := &segment.News{Title: "Irish Times", Fetcher: irishtimesFetcher, LLM: llmClient}
+	meduza := &segment.News{Title: "Meduza", Fetcher: meduzaFetcher, LLM: llmClient, Language: "ru"}
+
+	available := map[string]digest.NamedSegment{
+		"weather":    {Name: "Weather", Segment: &segment.Weather{Provider: weatherProvider}},
+		"irishtimes": {Name: irishtimes.Title, Segment: irishtimes},
+		"meduza":     {Name: meduza.Title, Segment: meduza},
 	}
 
-	segments := make([]segment.Segment, 0, len(cfg.Segments))
+	segments := make([]digest.NamedSegment, 0, len(cfg.Segments))
 	for _, name := range cfg.Segments {
-		build, ok := builders[name]
+		seg, ok := available[name]
 		if !ok {
 			fmt.Fprintf(os.Stderr, "error: unknown segment %q\n", name)
 			os.Exit(1)
 		}
-		segments = append(segments, build())
+		segments = append(segments, seg)
 	}
 
 	ctx := context.Background()
-	text, err := digest.Compose(ctx, segments)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error composing digest: %v\n", err)
-		os.Exit(1)
-	}
+	text := digest.Compose(ctx, segments)
 
 	b, err := bot.New(cfg.BotToken)
 	if err != nil {
