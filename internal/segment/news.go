@@ -13,6 +13,13 @@ import (
 
 const maxNewsArticles = 5
 
+// maxLLMArticles caps how many feed items we send to the model. RSS feeds can
+// carry dozens of entries; sending all of them bloats the prompt and, with a
+// modest context window (e.g. ollama's 4096-token default), leaves no room for
+// the completion, which then gets truncated into invalid JSON. A bounded pool
+// is plenty to pick the top 3 from.
+const maxLLMArticles = 15
+
 type News struct {
 	Title    string
 	Fetcher  news.FeedFetcher
@@ -55,6 +62,10 @@ type llmPick struct {
 }
 
 func (n *News) produceWithLLM(ctx context.Context, articles []news.Article) (string, error) {
+	if len(articles) > maxLLMArticles {
+		articles = articles[:maxLLMArticles]
+	}
+
 	prompt := buildPrompt(n.Title, articles, n.Language)
 
 	response, err := n.LLM.Complete(ctx, prompt)
