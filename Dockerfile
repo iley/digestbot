@@ -6,5 +6,7 @@ COPY . .
 RUN go build -o /digestbot ./cmd/digestbot
 
 FROM alpine:3.21
+# CA certs for HTTPS calls (Telegram, Open-Meteo, the LiteLLM proxy).
+RUN apk add --no-cache ca-certificates
 COPY --from=builder /digestbot /digestbot
 ENTRYPOINT ["/digestbot"]
