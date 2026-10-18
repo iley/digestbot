@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
+	"time"
 
 	"github.com/iley/digestbot/internal/llm"
 )
@@ -17,6 +19,7 @@ func (r *LLMRanker) Rank(ctx context.Context, articles []Article, limit int) ([]
 	if count <= 0 {
 		return nil, nil
 	}
+	started := time.Now()
 	prompt := fmt.Sprintf("Here are news headlines and their RSS descriptions:\n%s\nPick the %d most important news stories, in descending order of importance. Return ONLY a JSON array of %d unique 1-based article numbers, for example [3,1,2]. Do not summarize the articles.", articleList(articles), count, count)
 	response, err := r.LLM.Complete(ctx, prompt)
 	if err != nil {
@@ -32,6 +35,7 @@ func (r *LLMRanker) Rank(ctx context.Context, articles []Article, limit int) ([]
 	if err := ValidateRanking(indices, len(articles), count); err != nil {
 		return nil, err
 	}
+	log.Printf("news ranking succeeded provider=llm candidates=%d selected=%d duration=%s", len(articles), count, time.Since(started))
 	return indices, nil
 }
 
@@ -42,6 +46,7 @@ func (s *LLMSummarizer) Summarize(ctx context.Context, articles []Article, langu
 	if len(articles) == 0 {
 		return nil, nil
 	}
+	started := time.Now()
 	if language == "" {
 		language = "en"
 	}
@@ -57,6 +62,7 @@ func (s *LLMSummarizer) Summarize(ctx context.Context, articles []Article, langu
 	if err := ValidateSummaries(summaries, len(articles)); err != nil {
 		return nil, err
 	}
+	log.Printf("news summarization succeeded provider=llm articles=%d duration=%s", len(articles), time.Since(started))
 	return summaries, nil
 }
 

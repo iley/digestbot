@@ -28,6 +28,18 @@ export DIGESTBOT_JEV_API_KEY=your-typesafe-api-key
 
 The LLM API key is still required for summaries. Requests have a 30-second timeout; API errors or missing/invalid scores fail the news segment rather than silently switching providers. Set `DIGESTBOT_NEWS_RANKER=llm` to switch back. `jev-latest` follows TypeSafe’s latest model; use `DIGESTBOT_JEV_MODEL` to choose a specific supported version.
 
+### Verifying the deployed ranker
+
+Logs go to stderr and appear in your container/runtime logs (for Docker, `docker logs <container>`). Startup logs show the configured provider and enabled segments. A successful ranking logs the provider, candidate and selected counts, and elapsed duration. Successful LLM summarization logs its article count and elapsed duration. Jev also logs the requested model and the model version returned by the API (`unknown` if omitted). For example:
+
+```text
+news ranking configured provider="jev" segments=["weather" "irishtimes" "meduza"]
+news ranking succeeded provider=jev requested_model="jev-latest" model="jev-1.13.0" candidates=15 selected=3 duration=420ms
+news summarization succeeded provider=llm articles=3 duration=1.2s
+```
+
+These are illustrative values. The success line confirms a completed, validated ranking call; the startup line only confirms configuration. Empty feeds do not produce ranking success logs. Ranking success does not confirm summarization or Telegram delivery; segment failures are logged separately. Ranking logs do not include API keys or article content.
+
 ## Prerequisites
 
 - Go 1.26+

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"sort"
 	"strings"
@@ -42,6 +43,7 @@ type jevRequest struct {
 }
 
 type jevResponse struct {
+	Model   string `json:"model"`
 	Answers map[string]struct {
 		Type  string   `json:"type"`
 		Score *float64 `json:"score"` // Distinguish a valid zero from a missing/null score.
@@ -53,6 +55,7 @@ func (r *JevRanker) Rank(ctx context.Context, articles []Article, limit int) ([]
 	if count <= 0 {
 		return nil, nil
 	}
+	started := time.Now()
 	if strings.TrimSpace(r.APIKey) == "" {
 		return nil, fmt.Errorf("jev: API key is required")
 	}
@@ -134,5 +137,10 @@ func (r *JevRanker) Rank(ctx context.Context, articles []Article, limit int) ([]
 		indices[i] = i
 	}
 	sort.SliceStable(indices, func(i, j int) bool { return scores[indices[i]] > scores[indices[j]] })
+	returnedModel := result.Model
+	if returnedModel == "" {
+		returnedModel = "unknown"
+	}
+	log.Printf("news ranking succeeded provider=jev requested_model=%q model=%q candidates=%d selected=%d duration=%s", model, returnedModel, len(articles), count, time.Since(started))
 	return indices[:count], nil
 }

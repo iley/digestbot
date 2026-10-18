@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/go-telegram/bot"
@@ -59,6 +60,8 @@ func main() {
 		}
 		segments = append(segments, seg)
 	}
+
+	log.Printf("news ranking configured provider=%q segments=%q", cfg.NewsRanker, cfg.Segments)
 
 	ctx := context.Background()
 	text := digest.Compose(ctx, segments)
