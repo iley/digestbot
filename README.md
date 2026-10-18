@@ -10,9 +10,23 @@ Personal Telegram bot that sends a daily digest combining weather and news.
 
 ## News processing
 
-Each feed supplies up to 15 candidates. A `news.Ranker` selects the three most important stories (or all available stories for smaller feeds), then a `news.Summarizer` writes one sentence per selected story. Both currently use the configured LLM through separate calls; ranking providers can be replaced independently of summarization. Meduza summaries are in Russian.
+Each feed supplies up to 15 candidates. A `news.Ranker` selects the three most important stories (or all available stories for smaller feeds), then a `news.Summarizer` writes one sentence per selected story. By default both use the configured LLM through separate calls. Set `--news-ranker=jev` to rank with Jev while keeping LLM summarization. Meduza summaries are in Russian.
 
 Selections are validated for count, bounds, and uniqueness; summaries must match the selected articles in count and order. With neither component configured, the news segment renders up to five raw headlines.
+
+### Jev ranking
+
+The Jev ranker uses [TypeSafe’s Score API](https://docs.typesafe.ai/primitives/score): one question per candidate in a single request. It scores public significance on a five-level rubric, sorts descending, and preserves feed order for ties. The rubric is in `internal/news/jev.go`. It does not deduplicate stories about the same event.
+
+With the usual Telegram, feed, and LLM configuration already set:
+
+```sh
+export DIGESTBOT_NEWS_RANKER=jev
+export DIGESTBOT_JEV_API_KEY=your-typesafe-api-key
+./digestbot
+```
+
+The LLM API key is still required for summaries. Requests have a 30-second timeout; API errors or missing/invalid scores fail the news segment rather than silently switching providers. Set `DIGESTBOT_NEWS_RANKER=llm` to switch back. `jev-latest` follows TypeSafe’s latest model; use `DIGESTBOT_JEV_MODEL` to choose a specific supported version.
 
 ## Prerequisites
 
@@ -32,6 +46,10 @@ All configuration is done via environment variables or CLI flags. Flags take pre
 | Latitude | `DIGESTBOT_LATITUDE` | `--latitude` | yes | — |
 | Longitude | `DIGESTBOT_LONGITUDE` | `--longitude` | yes | — |
 | OpenAI API key | `DIGESTBOT_OPENAI_API_KEY` | `--openai-api-key` | yes | — |
+| News ranker | `DIGESTBOT_NEWS_RANKER` | `--news-ranker` | no | `llm` (`llm` or `jev`) |
+| Jev API key | `DIGESTBOT_JEV_API_KEY` | `--jev-api-key` | when Jev ranks news | — |
+| Jev model | `DIGESTBOT_JEV_MODEL` | `--jev-model` | no | `jev-latest` |
+| Jev API base URL | `DIGESTBOT_JEV_BASE_URL` | `--jev-base-url` | no | `https://api.typesafe.ai/v1` |
 | Timezone | `DIGESTBOT_TIMEZONE` | `--timezone` | no | `Europe/Dublin` |
 | Segments | `DIGESTBOT_SEGMENTS` | `--segments` | no | `weather,irishtimes,meduza` |
 

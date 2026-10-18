@@ -33,7 +33,10 @@ func main() {
 		Model:   cfg.LLMModel,
 		BaseURL: cfg.LLMBaseURL,
 	}
-	ranker := &news.LLMRanker{LLM: llmClient}
+	var ranker news.Ranker = &news.LLMRanker{LLM: llmClient}
+	if cfg.NewsRanker == "jev" {
+		ranker = &news.JevRanker{APIKey: cfg.JevAPIKey, Model: cfg.JevModel, BaseURL: cfg.JevBaseURL}
+	}
 	summarizer := &news.LLMSummarizer{LLM: llmClient}
 	irishtimesFetcher := &news.RSSFetcher{FeedURL: "https://www.irishtimes.com/arc/outboundfeeds/rss/"}
 	meduzaFetcher := &news.RSSFetcher{FeedURL: "https://meduza.io/rss/news"}

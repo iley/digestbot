@@ -9,6 +9,10 @@ import (
 )
 
 type Config struct {
+	NewsRanker   string
+	JevAPIKey    string
+	JevModel     string
+	JevBaseURL   string
 	BotToken     string
 	ChatID       int64
 	Latitude     float64
@@ -73,6 +77,14 @@ func Parse() (*Config, error) {
 	openAIKey := fs.String("openai-api-key", openAIKeyDefault, "LLM API key (env: DIGESTBOT_OPENAI_API_KEY)")
 	llmBaseURL := fs.String("llm-base-url", llmBaseURLDefault, "OpenAI-compatible LLM base URL; empty uses OpenAI (env: DIGESTBOT_LLM_BASE_URL)")
 	llmModel := fs.String("llm-model", llmModelDefault, "LLM model name; empty uses gpt-5-mini (env: DIGESTBOT_LLM_MODEL)")
+	newsRankerDefault := os.Getenv("DIGESTBOT_NEWS_RANKER")
+	if newsRankerDefault == "" {
+		newsRankerDefault = "llm"
+	}
+	newsRanker := fs.String("news-ranker", newsRankerDefault, "News ranker: llm or jev (env: DIGESTBOT_NEWS_RANKER)")
+	jevAPIKey := fs.String("jev-api-key", os.Getenv("DIGESTBOT_JEV_API_KEY"), "TypeSafe API key (env: DIGESTBOT_JEV_API_KEY)")
+	jevModel := fs.String("jev-model", os.Getenv("DIGESTBOT_JEV_MODEL"), "Jev model; empty uses jev-latest (env: DIGESTBOT_JEV_MODEL)")
+	jevBaseURL := fs.String("jev-base-url", os.Getenv("DIGESTBOT_JEV_BASE_URL"), "TypeSafe API base URL including /v1 (env: DIGESTBOT_JEV_BASE_URL)")
 	segmentsFlag := fs.String("segments", segmentsDefault, "Comma-separated list of segments (env: DIGESTBOT_SEGMENTS)")
 	if err := fs.Parse(os.Args[1:]); err != nil {
 		return nil, err
@@ -113,6 +125,13 @@ func Parse() (*Config, error) {
 		return nil, fmt.Errorf("LLM API key is required (--openai-api-key or DIGESTBOT_OPENAI_API_KEY)")
 	}
 
+	if *newsRanker != "llm" && *newsRanker != "jev" {
+		return nil, fmt.Errorf("invalid news ranker %q: use llm or jev", *newsRanker)
+	}
+	if needsLLM && *newsRanker == "jev" && strings.TrimSpace(*jevAPIKey) == "" {
+		return nil, fmt.Errorf("Jev API key is required (--jev-api-key or DIGESTBOT_JEV_API_KEY)")
+	}
+
 	if needsWeather {
 		// Check if latitude/longitude were set via flags.
 		flagLatSet, flagLonSet := false, false
@@ -133,6 +152,10 @@ func Parse() (*Config, error) {
 	}
 
 	return &Config{
+		NewsRanker:   *newsRanker,
+		JevAPIKey:    *jevAPIKey,
+		JevModel:     *jevModel,
+		JevBaseURL:   *jevBaseURL,
 		BotToken:     *botToken,
 		ChatID:       *chatID,
 		Latitude:     *latitude,
