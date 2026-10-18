@@ -2,29 +2,25 @@ package segment
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
 
-	"github.com/iley/digestbot/internal/llm"
 	"github.com/iley/digestbot/internal/news"
 )
 
 const maxNewsArticles = 5
 
-// maxLLMArticles caps how many feed items we send to the model. RSS feeds can
-// carry dozens of entries; sending all of them bloats the prompt and, with a
-// modest context window (e.g. ollama's 4096-token default), leaves no room for
-// the completion, which then gets truncated into invalid JSON. A bounded pool
-// is plenty to pick the top 3 from.
-const maxLLMArticles = 15
+// maxRankingArticles bounds the candidate pool sent to the ranker.
+const maxRankingArticles = 15
+const selectedNewsArticles = 3
 
 type News struct {
-	Title    string
-	Fetcher  news.FeedFetcher
-	LLM      llm.LLM // nil = raw headlines (no summarization)
-	Language string  // "ru" for Russian prompts; default is English
+	Title      string
+	Fetcher    news.FeedFetcher
+	Ranker     news.Ranker
+	Summarizer news.Summarizer
+	Language   string // "ru" for Russian summaries; default is English
 }
 
 func (n *News) Produce(ctx context.Context) (string, error) {
@@ -37,8 +33,11 @@ func (n *News) Produce(ctx context.Context) (string, error) {
 		return fmt.Sprintf("<b>%s</b>\nNo articles available.", EscapeHTML(n.Title)), nil
 	}
 
-	if n.LLM != nil {
-		return n.produceWithLLM(ctx, articles)
+	if n.Ranker != nil || n.Summarizer != nil {
+		if n.Ranker == nil || n.Summarizer == nil {
+			return "", fmt.Errorf("news %s: ranker and summarizer must both be configured", n.Title)
+		}
+		return n.produceDigest(ctx, articles)
 	}
 	return n.produceRaw(articles), nil
 }
@@ -56,67 +55,36 @@ func (n *News) produceRaw(articles []news.Article) string {
 	return b.String()
 }
 
-type llmPick struct {
-	Index   int    `json:"index"`
-	Summary string `json:"summary"`
-}
-
-func (n *News) produceWithLLM(ctx context.Context, articles []news.Article) (string, error) {
-	if len(articles) > maxLLMArticles {
-		articles = articles[:maxLLMArticles]
+func (n *News) produceDigest(ctx context.Context, articles []news.Article) (string, error) {
+	if len(articles) > maxRankingArticles {
+		articles = articles[:maxRankingArticles]
 	}
-
-	prompt := buildPrompt(n.Title, articles, n.Language)
-
-	response, err := n.LLM.Complete(ctx, prompt)
+	count := min(selectedNewsArticles, len(articles))
+	indices, err := n.Ranker.Rank(ctx, articles, count)
+	if err == nil {
+		err = news.ValidateRanking(indices, len(articles), count)
+	}
 	if err != nil {
-		return "", fmt.Errorf("news %s llm: %w", n.Title, err)
+		return "", fmt.Errorf("news %s ranking: %w", n.Title, err)
 	}
-
-	var picks []llmPick
-	if err := json.Unmarshal([]byte(response), &picks); err != nil {
-		return "", fmt.Errorf("news %s: failed to parse LLM response: %w", n.Title, err)
+	selected := make([]news.Article, len(indices))
+	for i, index := range indices {
+		selected[i] = articles[index]
+	}
+	summaries, err := n.Summarizer.Summarize(ctx, selected, n.Language)
+	if err == nil {
+		err = news.ValidateSummaries(summaries, len(selected))
+	}
+	if err != nil {
+		return "", fmt.Errorf("news %s summarization: %w", n.Title, err)
 	}
 
 	var b strings.Builder
 	fmt.Fprintf(&b, "<b>%s</b>", EscapeHTML(n.Title))
-	for i, p := range picks {
-		if p.Index < 1 || p.Index > len(articles) {
-			continue
-		}
-		a := articles[p.Index-1]
-		fmt.Fprintf(&b, "\n%d. %s <a href=\"%s\">Read more</a>",
-			i+1, EscapeHTML(p.Summary), sanitizeURL(a.Link))
+	for i, a := range selected {
+		fmt.Fprintf(&b, "\n%d. %s <a href=\"%s\">Read more</a>", i+1, EscapeHTML(summaries[i]), sanitizeURL(a.Link))
 	}
 	return b.String(), nil
-}
-
-func buildPrompt(source string, articles []news.Article, language string) string {
-	var b strings.Builder
-
-	// Build the numbered article list (shared by both languages).
-	var list strings.Builder
-	for i, a := range articles {
-		fmt.Fprintf(&list, "%d. %s", i+1, a.Title)
-		if a.Summary != "" {
-			fmt.Fprintf(&list, " — %s", a.Summary)
-		}
-		list.WriteString("\n")
-	}
-
-	if language == "ru" {
-		fmt.Fprintf(&b, "Вот сегодняшние заголовки из %s:\n%s", source, list.String())
-		b.WriteString("\nВыбери 3 самые важные новости. Верни JSON-массив:\n")
-		b.WriteString(`[{"index": <номер от 1>, "summary": "<краткое описание в 1 предложение>"}]`)
-		b.WriteString("\nВерни ТОЛЬКО JSON-массив, без другого текста.")
-	} else {
-		fmt.Fprintf(&b, "Here are today's headlines from %s:\n%s", source, list.String())
-		b.WriteString("\nPick the 3 most important news stories. Return a JSON array:\n")
-		b.WriteString(`[{"index": <1-based>, "summary": "<1 sentence summary>"}]`)
-		b.WriteString("\nReturn ONLY the JSON array, no other text.")
-	}
-
-	return b.String()
 }
 
 // sanitizeURL ensures a URL is safe for use in an HTML href attribute.

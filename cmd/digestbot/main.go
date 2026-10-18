@@ -33,11 +33,13 @@ func main() {
 		Model:   cfg.LLMModel,
 		BaseURL: cfg.LLMBaseURL,
 	}
+	ranker := &news.LLMRanker{LLM: llmClient}
+	summarizer := &news.LLMSummarizer{LLM: llmClient}
 	irishtimesFetcher := &news.RSSFetcher{FeedURL: "https://www.irishtimes.com/arc/outboundfeeds/rss/"}
 	meduzaFetcher := &news.RSSFetcher{FeedURL: "https://meduza.io/rss/news"}
 
-	irishtimes := &segment.News{Title: "Irish Times", Fetcher: irishtimesFetcher, LLM: llmClient}
-	meduza := &segment.News{Title: "Meduza", Fetcher: meduzaFetcher, LLM: llmClient, Language: "ru"}
+	irishtimes := &segment.News{Title: "Irish Times", Fetcher: irishtimesFetcher, Ranker: ranker, Summarizer: summarizer}
+	meduza := &segment.News{Title: "Meduza", Fetcher: meduzaFetcher, Ranker: ranker, Summarizer: summarizer, Language: "ru"}
 
 	available := map[string]digest.NamedSegment{
 		"weather":    {Name: "Weather", Segment: &segment.Weather{Provider: weatherProvider}},

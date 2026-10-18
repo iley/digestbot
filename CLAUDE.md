@@ -4,12 +4,12 @@ Personal Telegram bot that sends a daily digest combining weather and news. Buil
 
 ## Status
 
-Work in progress. **Milestone 6 (Meduza integration) is complete.** The bot fetches Irish Times and Meduza news, uses an LLM to pick the 3 most important from each source and summarize them (Meduza in Russian), then sends the digest via Telegram. See the Obsidian note `Digestbot.md` for the full roadmap.
+Work in progress. **Milestone 6 (Meduza integration) is complete.** The bot fetches Irish Times and Meduza news, uses separate LLM-backed ranking and summarization steps to pick the 3 most important from each source and summarize them (Meduza in Russian), then sends the digest via Telegram. See the Obsidian note `Digestbot.md` for the full roadmap.
 
 ## Architecture
 
 - **Segment-based**: each content source implements the `Segment` interface (`internal/segment/`); the orchestrator (`internal/digest/`) collects and composes output. Segments are registered by name in `cmd/digestbot/main.go` and selected via the `--segments` flag (default: `weather,irishtimes,meduza`). Segments are responsible for returning valid Telegram HTML (use `segment.EscapeHTML` for dynamic text).
-- **All external deps behind Go interfaces**: `WeatherProvider`, `ContentExtractor`, `LLM`, etc.
+- **All external deps behind Go interfaces**: `WeatherProvider`, `news.Ranker`, `news.Summarizer`, `LLM`, etc.
 - **LLM backend**: any OpenAI-compatible endpoint via the `llm.OpenAI` client. Defaults to OpenAI (`gpt-5-mini`). Point it elsewhere — e.g. a self-hosted litellm proxy serving DeepSeek/gemma — via `--llm-base-url`/`DIGESTBOT_LLM_BASE_URL` and `--llm-model`/`DIGESTBOT_LLM_MODEL`; the API key comes from `DIGESTBOT_OPENAI_API_KEY`. `llm.OpenAI` strips `<think>` reasoning blocks and markdown code fences from responses, so reasoning models (e.g. `deepseek-r1:14b`) also parse cleanly.
 - **Config**: CLI flags + environment variables only, no config files. Secrets via env vars (`DIGESTBOT_BOT_TOKEN`, `DIGESTBOT_CHAT_ID`, `DIGESTBOT_OPENAI_API_KEY`).
 
@@ -21,7 +21,7 @@ internal/config/     — CLI flags + env var parsing
 internal/segment/    — Segment interface + implementations
 internal/digest/     — orchestrator (Compose)
 internal/llm/        — LLM interface + OpenAI implementation
-internal/news/       — news feed fetching (Article, FeedFetcher, RSSFetcher)
+internal/news/       — news feed fetching and editorial interfaces with LLM-backed ranking/summarization
 internal/weather/    — weather data fetching
 ```
 

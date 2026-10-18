@@ -8,6 +8,12 @@ Personal Telegram bot that sends a daily digest combining weather and news.
 - **Irish Times** — top 3 stories from the [Irish Times RSS feed](https://www.irishtimes.com/arc/outboundfeeds/rss/), selected and summarized by an LLM
 - **Meduza** — top 3 stories from the [Meduza RSS feed](https://meduza.io/rss/news), selected and summarized in Russian by an LLM
 
+## News processing
+
+Each feed supplies up to 15 candidates. A `news.Ranker` selects the three most important stories (or all available stories for smaller feeds), then a `news.Summarizer` writes one sentence per selected story. Both currently use the configured LLM through separate calls; ranking providers can be replaced independently of summarization. Meduza summaries are in Russian.
+
+Selections are validated for count, bounds, and uniqueness; summaries must match the selected articles in count and order. With neither component configured, the news segment renders up to five raw headlines.
+
 ## Prerequisites
 
 - Go 1.26+
