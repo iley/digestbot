@@ -73,7 +73,7 @@ func Parse() (*Config, error) {
 	chatID := fs.Int64("chat-id", chatIDDefault, "Telegram chat ID (env: DIGESTBOT_CHAT_ID)")
 	latitude := fs.Float64("latitude", latDefault, "Latitude for weather (env: DIGESTBOT_LATITUDE)")
 	longitude := fs.Float64("longitude", lonDefault, "Longitude for weather (env: DIGESTBOT_LONGITUDE)")
-	timezone := fs.String("timezone", tzDefault, "Timezone for weather (env: DIGESTBOT_TIMEZONE)")
+	timezone := fs.String("timezone", tzDefault, "Timezone for weather and clock-change notifications (env: DIGESTBOT_TIMEZONE)")
 	openAIKey := fs.String("openai-api-key", openAIKeyDefault, "LLM API key (env: DIGESTBOT_OPENAI_API_KEY)")
 	llmBaseURL := fs.String("llm-base-url", llmBaseURLDefault, "OpenAI-compatible LLM base URL; empty uses OpenAI (env: DIGESTBOT_LLM_BASE_URL)")
 	llmModel := fs.String("llm-model", llmModelDefault, "LLM model name; empty uses gpt-5-mini (env: DIGESTBOT_LLM_MODEL)")

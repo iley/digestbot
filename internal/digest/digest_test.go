@@ -27,6 +27,22 @@ func TestComposeJoinsSegments(t *testing.T) {
 	}
 }
 
+func TestComposeOmitsEmptySegments(t *testing.T) {
+	out := Compose(context.Background(), []NamedSegment{
+		{Name: "DST", Segment: stubSegment{}},
+		{Name: "A", Segment: stubSegment{text: "first"}},
+		{Name: "Empty", Segment: stubSegment{text: " \n"}},
+		{Name: "B", Segment: stubSegment{text: "second"}},
+		{Name: "Empty", Segment: stubSegment{}},
+	})
+	if out != "first\n\nsecond" {
+		t.Fatalf("got %q", out)
+	}
+	if out := Compose(context.Background(), []NamedSegment{{Name: "DST", Segment: stubSegment{}}}); out != "" {
+		t.Fatalf("all-empty digest got %q", out)
+	}
+}
+
 // A failing segment must not abort the digest; it is replaced by a notice
 // while the other segments still render.
 func TestComposeReplacesFailedSegment(t *testing.T) {

@@ -4,6 +4,7 @@ Personal Telegram bot that sends a daily digest combining weather and news.
 
 ## Digest contents
 
+- **Clock change** (optional, `dst`) — a bold ⏰ notification when clocks moved forward or back in the configured timezone within the previous 24 hours; otherwise omitted entirely
 - **Weather** — today's forecast (temperature range, precipitation, conditions) from [Open-Meteo](https://open-meteo.com/)
 - **Irish Times** — top 3 stories from the [Irish Times RSS feed](https://www.irishtimes.com/arc/outboundfeeds/rss/), selected and summarized by an LLM
 - **Meduza** — top 3 stories from the [Meduza RSS feed](https://meduza.io/rss/news), selected and summarized in Russian by an LLM
@@ -67,7 +68,9 @@ All configuration is done via environment variables or CLI flags. Flags take pre
 
 Latitude and longitude are used to fetch weather from [Open-Meteo](https://open-meteo.com/). Timezone must be a valid [tz database name](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) (e.g. `Europe/Dublin`, `America/New_York`).
 
-Segments controls which digest sections are included and in what order. Available segments: `weather`, `irishtimes`, `meduza`.
+Segments controls which digest sections are included and in what order. Available segments: `dst`, `weather`, `irishtimes`, `meduza`.
+
+To put clock-change notifications first, set `DIGESTBOT_SEGMENTS=dst,weather,irishtimes,meduza` (or `--segments=dst,weather,irishtimes,meduza`). The `dst` segment uses `DIGESTBOT_TIMEZONE` / `--timezone`, defaulting to `Europe/Dublin`, and requires no location coordinates or API keys. For example, it displays **⏰ Clocks moved one hour forward** after the spring change. It compares UTC offsets, including non-hour changes, and produces no heading or blank lines when there is no change. If every selected segment is empty, no Telegram message is sent. Repeated runs within the 24-hour window repeat the notice.
 
 ## Running
 

@@ -17,7 +17,7 @@ type NamedSegment struct {
 }
 
 // Compose runs each segment sequentially and joins the results with blank
-// lines. A segment that fails is replaced by a brief error notice (and the
+// lines, omitting empty segments. A segment that fails is replaced by a brief error notice (and the
 // underlying error is logged) so the digest is always produced.
 func Compose(ctx context.Context, segments []NamedSegment) string {
 	parts := make([]string, 0, len(segments))
@@ -27,7 +27,9 @@ func Compose(ctx context.Context, segments []NamedSegment) string {
 			log.Printf("segment %q failed: %v", s.Name, err)
 			text = fmt.Sprintf("<b>%s</b>\n⚠️ Failed to load.", segment.EscapeHTML(s.Name))
 		}
-		parts = append(parts, text)
+		if strings.TrimSpace(text) != "" {
+			parts = append(parts, text)
+		}
 	}
 	return strings.Join(parts, "\n\n")
 }

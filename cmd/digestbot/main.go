@@ -46,6 +46,7 @@ func main() {
 	meduza := &segment.News{Title: "Meduza", Fetcher: meduzaFetcher, Ranker: ranker, Summarizer: summarizer, Language: "ru"}
 
 	available := map[string]digest.NamedSegment{
+		"dst":        {Name: "Clock change", Segment: &segment.DST{Timezone: cfg.Timezone}},
 		"weather":    {Name: "Weather", Segment: &segment.Weather{Provider: weatherProvider}},
 		"irishtimes": {Name: irishtimes.Title, Segment: irishtimes},
 		"meduza":     {Name: meduza.Title, Segment: meduza},
@@ -65,6 +66,10 @@ func main() {
 
 	ctx := context.Background()
 	text := digest.Compose(ctx, segments)
+	if text == "" {
+		log.Print("No digest content to send.")
+		return
+	}
 
 	b, err := bot.New(cfg.BotToken)
 	if err != nil {
